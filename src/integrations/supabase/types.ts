@@ -14,7 +14,201 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      park_items: {
+        Row: {
+          created_at: string
+          custom_hours: Json | null
+          description: string | null
+          id: string
+          important_info: string | null
+          map_x: number | null
+          map_y: number | null
+          name: string
+          park_id: string
+          photo_url: string | null
+          show_wait_time: boolean
+          sort_order: number
+          status: Database["public"]["Enums"]["item_status"]
+          type: Database["public"]["Enums"]["item_type"]
+          updated_at: string
+          wait_time: string | null
+        }
+        Insert: {
+          created_at?: string
+          custom_hours?: Json | null
+          description?: string | null
+          id?: string
+          important_info?: string | null
+          map_x?: number | null
+          map_y?: number | null
+          name: string
+          park_id: string
+          photo_url?: string | null
+          show_wait_time?: boolean
+          sort_order?: number
+          status?: Database["public"]["Enums"]["item_status"]
+          type: Database["public"]["Enums"]["item_type"]
+          updated_at?: string
+          wait_time?: string | null
+        }
+        Update: {
+          created_at?: string
+          custom_hours?: Json | null
+          description?: string | null
+          id?: string
+          important_info?: string | null
+          map_x?: number | null
+          map_y?: number | null
+          name?: string
+          park_id?: string
+          photo_url?: string | null
+          show_wait_time?: boolean
+          sort_order?: number
+          status?: Database["public"]["Enums"]["item_status"]
+          type?: Database["public"]["Enums"]["item_type"]
+          updated_at?: string
+          wait_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "park_items_park_id_fkey"
+            columns: ["park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          map_image_url: string | null
+          name: string
+          opening_hours: Json
+          resort_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          map_image_url?: string | null
+          name: string
+          opening_hours?: Json
+          resort_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          map_image_url?: string | null
+          name?: string
+          opening_hours?: Json
+          resort_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parks_resort_id_fkey"
+            columns: ["resort_id"]
+            isOneToOne: false
+            referencedRelation: "resorts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      resort_links: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          resort_id: string
+          sort_order: number
+          title: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          resort_id: string
+          sort_order?: number
+          title: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          resort_id?: string
+          sort_order?: number
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resort_links_resort_id_fkey"
+            columns: ["resort_id"]
+            isOneToOne: false
+            referencedRelation: "resorts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resorts: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +217,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      item_status: "open" | "closed" | "sync" | "custom"
+      item_type: "attraction" | "food" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +345,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      item_status: ["open", "closed", "sync", "custom"],
+      item_type: ["attraction", "food", "other"],
+    },
   },
 } as const
