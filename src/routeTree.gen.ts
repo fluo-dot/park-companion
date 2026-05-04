@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ManageParkIdRouteImport } from './routes/manage.$parkId'
+import { Route as AppResortSlugRouteImport } from './routes/app.$resortSlug'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -34,17 +35,24 @@ const ManageParkIdRoute = ManageParkIdRouteImport.update({
   path: '/manage/$parkId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppResortSlugRoute = AppResortSlugRouteImport.update({
+  id: '/app/$resortSlug',
+  path: '/app/$resortSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/app/$resortSlug': typeof AppResortSlugRoute
   '/manage/$parkId': typeof ManageParkIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/app/$resortSlug': typeof AppResortSlugRoute
   '/manage/$parkId': typeof ManageParkIdRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,33 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/app/$resortSlug': typeof AppResortSlugRoute
   '/manage/$parkId': typeof ManageParkIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/login' | '/manage/$parkId'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/app/$resortSlug'
+    | '/manage/$parkId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/login' | '/manage/$parkId'
-  id: '__root__' | '/' | '/dashboard' | '/login' | '/manage/$parkId'
+  to: '/' | '/dashboard' | '/login' | '/app/$resortSlug' | '/manage/$parkId'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/login'
+    | '/app/$resortSlug'
+    | '/manage/$parkId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  AppResortSlugRoute: typeof AppResortSlugRoute
   ManageParkIdRoute: typeof ManageParkIdRoute
 }
 
@@ -99,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManageParkIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/$resortSlug': {
+      id: '/app/$resortSlug'
+      path: '/app/$resortSlug'
+      fullPath: '/app/$resortSlug'
+      preLoaderRoute: typeof AppResortSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -106,8 +134,18 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  AppResortSlugRoute: AppResortSlugRoute,
   ManageParkIdRoute: ManageParkIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
