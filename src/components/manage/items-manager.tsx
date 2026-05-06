@@ -185,6 +185,11 @@ function ItemDialog({
   const uploadPhoto = async (file: File) => {
     if (!user) return;
     setBusy(true);
+    if (isDemoUser(user)) {
+      setPhotoUrl(await fileToDataUrl(file));
+      setBusy(false);
+      return;
+    }
     const ext = file.name.split(".").pop() ?? "jpg";
     const path = `${user.id}/items/${parkId}/${Date.now()}.${ext}`;
     const { error } = await supabase.storage
@@ -213,6 +218,15 @@ function ItemDialog({
       show_wait_time: type === "attraction" ? showWait : false,
       wait_time: type === "attraction" && showWait ? waitTime : null,
     };
+    if (isDemoUser(user)) {
+      saveDemoItem(payload, item?.id);
+      setBusy(false);
+      toast.success(item ? "Aktualisiert" : "Hinzugefügt");
+      setOpen(false);
+      reset();
+      onSaved();
+      return;
+    }
     const { error } = item
       ? await supabase.from("park_items").update(payload).eq("id", item.id)
       : await supabase.from("park_items").insert(payload);
