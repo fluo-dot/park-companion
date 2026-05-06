@@ -18,6 +18,14 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+const withPreviewTimeout = <T,>(promise: Promise<T>) =>
+  Promise.race<T>([
+    promise,
+    new Promise<T>((_, reject) => {
+      window.setTimeout(() => reject(new Error("Preview login timeout")), 2500);
+    }),
+  ]);
+
 function LoginPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -37,18 +45,18 @@ function LoginPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { error } = await withPreviewTimeout(supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: window.location.origin,
             data: { display_name: displayName || email.split("@")[0] },
           },
-        });
+        }));
         if (error) throw error;
         toast.success("Konto erstellt! Du bist angemeldet.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await withPreviewTimeout(supabase.auth.signInWithPassword({ email, password }));
         if (error) throw error;
         toast.success("Willkommen zurück!");
       }
