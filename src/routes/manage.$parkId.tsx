@@ -9,6 +9,7 @@ import { OpeningHoursEditor } from "@/components/manage/opening-hours-editor";
 import { MapUploader } from "@/components/manage/map-uploader";
 import { ItemsManager } from "@/components/manage/items-manager";
 import { ResortLinksManager } from "@/components/manage/resort-links-manager";
+import { getDemoPark, getDemoResortName, isDemoUser } from "@/lib/demo-store";
 
 export const Route = createFileRoute("/manage/$parkId")({
   head: () => ({ meta: [{ title: "Park managen — ParkPilot" }] }),
@@ -33,6 +34,17 @@ function ManagePage() {
   const [busy, setBusy] = useState(true);
 
   const load = useCallback(async () => {
+    if (isDemoUser(user)) {
+      const p = getDemoPark(parkId);
+      if (!p) {
+        setBusy(false);
+        return;
+      }
+      setPark(p as Park);
+      setResortName(getDemoResortName(p.resort_id));
+      setBusy(false);
+      return;
+    }
     const { data: p } = await supabase
       .from("parks")
       .select("id,name,description,resort_id,map_image_url,opening_hours")
@@ -50,7 +62,7 @@ function ManagePage() {
       .maybeSingle();
     setResortName(r?.name ?? "");
     setBusy(false);
-  }, [parkId]);
+  }, [parkId, user]);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
