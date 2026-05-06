@@ -95,6 +95,16 @@ function NewLinkDialog({ resortId, onSaved }: { resortId: string; onSaved: () =>
   const submit = async () => {
     if (!title.trim() || !url.trim()) return;
     setBusy(true);
+    if (resortId.startsWith("resort_")) {
+      createDemoLink({ resortId, title: title.trim(), url: url.trim() });
+      setBusy(false);
+      toast.success("Link hinzugefügt");
+      setOpen(false);
+      setTitle("");
+      setUrl("");
+      onSaved();
+      return;
+    }
     const { error } = await supabase.from("resort_links").insert({
       resort_id: resortId,
       title: title.trim(),
