@@ -17,6 +17,14 @@ import {
 import { toast } from "sonner";
 import { Sparkles, Plus, LogOut, ExternalLink, MapPin } from "lucide-react";
 import { slugify } from "@/lib/slug";
+import {
+  clearDemoUser,
+  createDemoPark,
+  createDemoResort,
+  defaultOpeningHours,
+  isDemoUser,
+  loadDemoDashboard,
+} from "@/lib/demo-store";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — ParkPilot" }] }),
@@ -35,6 +43,13 @@ function DashboardPage() {
 
   const load = useCallback(async () => {
     if (!user) return;
+    if (isDemoUser(user)) {
+      const demo = loadDemoDashboard(user.id);
+      setResorts(demo.resorts);
+      setParks(demo.parks);
+      setBusy(false);
+      return;
+    }
     const { data: rs } = await supabase
       .from("resorts")
       .select("id,name,slug,description")
@@ -64,7 +79,8 @@ function DashboardPage() {
   }, [user, load]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    if (isDemoUser(user)) clearDemoUser();
+    else await supabase.auth.signOut();
     navigate({ to: "/" });
   };
 
@@ -194,6 +210,21 @@ function NewResortDialog({ onCreated }: { onCreated: () => void }) {
     if (!user || !name.trim()) return;
     setBusy(true);
     const slug = `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`;
+    if (isDemoUser(user)) {
+      createDemoResort({
+        ownerId: user.id,
+        name: name.trim(),
+        description: description.trim() || null,
+        slug,
+      });
+      setBusy(false);
+      toast.success("Resort erstellt");
+      setOpen(false);
+      setName("");
+      setDescription("");
+      onCreated();
+      return;
+    }
     const { error } = await supabase.from("resorts").insert({
       owner_id: user.id,
       name: name.trim(),
@@ -246,24 +277,29 @@ function NewParkDialog({ resortId, onCreated }: { resortId: string; onCreated: (
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const defaultHours = {
-    mon: { open: "10:00", close: "18:00", closed: false },
-    tue: { open: "10:00", close: "18:00", closed: false },
-    wed: { open: "10:00", close: "18:00", closed: false },
-    thu: { open: "10:00", close: "18:00", closed: false },
-    fri: { open: "10:00", close: "18:00", closed: false },
-    sat: { open: "10:00", close: "19:00", closed: false },
-    sun: { open: "10:00", close: "19:00", closed: false },
-  };
-
   const submit = async () => {
     if (!name.trim()) return;
     setBusy(true);
+    if (resortId.startsWith("resort_")) {
+      createDemoPark({
+        resortId,
+        name: name.trim(),
+        description: description.trim() || null,
+        openingHours: defaultOpeningHours,
+      });
+      setBusy(false);
+      toast.success("Park erstellt");
+      setOpen(false);
+      setName("");
+      setDescription("");
+      onCreated();
+      return;
+    }
     const { error } = await supabase.from("parks").insert({
       resort_id: resortId,
       name: name.trim(),
       description: description.trim() || null,
-      opening_hours: defaultHours,
+      opening_hours: defaultOpeningHours,
     });
     setBusy(false);
     if (error) return toast.error(error.message);
