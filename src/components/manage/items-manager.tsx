@@ -51,9 +51,10 @@ export type Item = {
 export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType }) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const load = async () => {
+    if (authLoading) return;
     if (isDemoUser(user)) {
       setItems(loadDemoItems(parkId, type));
       setLoading(false);
@@ -72,7 +73,7 @@ export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parkId, type]);
+  }, [parkId, type, user, authLoading]);
 
   const remove = async (id: string) => {
     if (!confirm("Wirklich löschen?")) return;
