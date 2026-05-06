@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Trash2, Upload, Pencil } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { deleteDemoItem, fileToDataUrl, isDemoUser, loadDemoItems, saveDemoItem } from "@/lib/demo-store";
 import {
   WAIT_TIME_OPTIONS,
   STATUS_LABEL,
@@ -50,8 +51,14 @@ export type Item = {
 export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType }) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   const load = async () => {
+    if (isDemoUser(user)) {
+      setItems(loadDemoItems(parkId, type));
+      setLoading(false);
+      return;
+    }
     const { data } = await supabase
       .from("park_items")
       .select("*")
@@ -69,6 +76,12 @@ export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType 
 
   const remove = async (id: string) => {
     if (!confirm("Wirklich löschen?")) return;
+    if (isDemoUser(user)) {
+      deleteDemoItem(id);
+      toast.success("Gelöscht");
+      load();
+      return;
+    }
     const { error } = await supabase.from("park_items").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Gelöscht");
