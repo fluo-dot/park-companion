@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Trash2, Upload, Pencil } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { deleteDemoItem, fileToDataUrl, isDemoUser, loadDemoItems, saveDemoItem } from "@/lib/demo-store";
 import {
   WAIT_TIME_OPTIONS,
   STATUS_LABEL,
@@ -50,8 +51,15 @@ export type Item = {
 export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType }) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
 
   const load = async () => {
+    if (authLoading) return;
+    if (isDemoUser(user)) {
+      setItems(loadDemoItems(parkId, type));
+      setLoading(false);
+      return;
+    }
     const { data } = await supabase
       .from("park_items")
       .select("*")
@@ -65,10 +73,16 @@ export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parkId, type]);
+  }, [parkId, type, user, authLoading]);
 
   const remove = async (id: string) => {
     if (!confirm("Wirklich löschen?")) return;
+    if (isDemoUser(user)) {
+      deleteDemoItem(id);
+      toast.success("Gelöscht");
+      load();
+      return;
+    }
     const { error } = await supabase.from("park_items").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Gelöscht");
@@ -172,6 +186,11 @@ function ItemDialog({
   const uploadPhoto = async (file: File) => {
     if (!user) return;
     setBusy(true);
+    if (isDemoUser(user)) {
+      setPhotoUrl(await fileToDataUrl(file));
+      setBusy(false);
+      return;
+    }
     const ext = file.name.split(".").pop() ?? "jpg";
     const path = `${user.id}/items/${parkId}/${Date.now()}.${ext}`;
     const { error } = await supabase.storage
@@ -200,6 +219,15 @@ function ItemDialog({
       show_wait_time: type === "attraction" ? showWait : false,
       wait_time: type === "attraction" && showWait ? waitTime : null,
     };
+    if (isDemoUser(user)) {
+      saveDemoItem(payload, item?.id);
+      setBusy(false);
+      toast.success(item ? "Aktualisiert" : "Hinzugefügt");
+      setOpen(false);
+      reset();
+      onSaved();
+      return;
+    }
     const { error } = item
       ? await supabase.from("park_items").update(payload).eq("id", item.id)
       : await supabase.from("park_items").insert(payload);

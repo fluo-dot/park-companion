@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Trash2, ExternalLink } from "lucide-react";
+import { createDemoLink, deleteDemoLink, loadDemoLinks } from "@/lib/demo-store";
 
 type Link = { id: string; title: string; url: string; image_url: string | null };
 
@@ -21,6 +22,11 @@ export function ResortLinksManager({ resortId }: { resortId: string }) {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
+    if (resortId.startsWith("resort_")) {
+      setLinks(loadDemoLinks(resortId));
+      setLoading(false);
+      return;
+    }
     const { data } = await supabase
       .from("resort_links")
       .select("id,title,url,image_url")
@@ -37,6 +43,11 @@ export function ResortLinksManager({ resortId }: { resortId: string }) {
 
   const remove = async (id: string) => {
     if (!confirm("Link löschen?")) return;
+    if (resortId.startsWith("resort_")) {
+      deleteDemoLink(id);
+      load();
+      return;
+    }
     await supabase.from("resort_links").delete().eq("id", id);
     load();
   };
@@ -84,6 +95,16 @@ function NewLinkDialog({ resortId, onSaved }: { resortId: string; onSaved: () =>
   const submit = async () => {
     if (!title.trim() || !url.trim()) return;
     setBusy(true);
+    if (resortId.startsWith("resort_")) {
+      createDemoLink({ resortId, title: title.trim(), url: url.trim() });
+      setBusy(false);
+      toast.success("Link hinzugefügt");
+      setOpen(false);
+      setTitle("");
+      setUrl("");
+      onSaved();
+      return;
+    }
     const { error } = await supabase.from("resort_links").insert({
       resort_id: resortId,
       title: title.trim(),

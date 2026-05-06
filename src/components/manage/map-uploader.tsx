@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { fileToDataUrl, isDemoUser, updateDemoPark } from "@/lib/demo-store";
 
 export function MapUploader({
   parkId,
@@ -21,6 +22,14 @@ export function MapUploader({
   const upload = async (file: File) => {
     if (!user) return;
     setBusy(true);
+    if (isDemoUser(user)) {
+      const url = await fileToDataUrl(file);
+      updateDemoPark(parkId, { map_image_url: url });
+      setBusy(false);
+      toast.success("Parkkarte gespeichert");
+      onChange(url);
+      return;
+    }
     const ext = file.name.split(".").pop() ?? "png";
     const path = `${user.id}/parks/${parkId}/map-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage

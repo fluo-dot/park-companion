@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
+import { createDemoUser, getDemoUser } from "@/lib/demo-store";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -26,38 +26,16 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard" });
-    });
+    if (getDemoUser()) navigate({ to: "/dashboard" });
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { display_name: displayName || email.split("@")[0] },
-          },
-        });
-        if (error) throw error;
-        toast.success("Konto erstellt! Du bist angemeldet.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success("Willkommen zurück!");
-      }
-      navigate({ to: "/dashboard" });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Etwas ist schiefgelaufen";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
+    createDemoUser(email, displayName || email.split("@")[0]);
+    toast.success(mode === "signup" ? "Konto erstellt" : "Willkommen zurück");
+    navigate({ to: "/dashboard" });
+    setLoading(false);
   };
 
   return (

@@ -6,6 +6,7 @@ import { ItemPeek, ItemDetailSheet } from "@/components/visitor/item-sheets";
 import type { Item } from "@/components/manage/items-manager";
 import { STATUS_LABEL, TYPE_LABEL } from "@/lib/park-constants";
 import { Clock, List, Map, MoreHorizontal, ExternalLink } from "lucide-react";
+import { loadDemoVisitorApp } from "@/lib/demo-store";
 
 export const Route = createFileRoute("/app/$resortSlug")({
   head: () => ({ meta: [{ title: "Park-App" }] }),
@@ -35,6 +36,16 @@ function VisitorApp() {
 
   useEffect(() => {
     (async () => {
+      const demo = loadDemoVisitorApp(resortSlug);
+      if (demo) {
+        setResort(demo.resort);
+        setParks(demo.parks);
+        setItems(demo.items);
+        setLinks(demo.links);
+        setActiveTab(demo.parks[0]?.id ?? "more");
+        setLoading(false);
+        return;
+      }
       const { data: r } = await supabase
         .from("resorts")
         .select("id,name")

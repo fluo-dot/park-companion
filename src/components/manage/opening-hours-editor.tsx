@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
+import { getDemoPark, updateDemoPark } from "@/lib/demo-store";
 
 type Hours = Record<string, { open: string; close: string; closed: boolean }>;
 
@@ -39,6 +40,12 @@ export function OpeningHoursEditor({
 
   const save = async () => {
     setBusy(true);
+    if (getDemoPark(parkId)) {
+      updateDemoPark(parkId, { opening_hours: hours });
+      setBusy(false);
+      toast.success("Öffnungszeiten gespeichert");
+      return;
+    }
     const { error } = await supabase.from("parks").update({ opening_hours: hours }).eq("id", parkId);
     setBusy(false);
     if (error) toast.error(error.message);
