@@ -46,6 +46,7 @@ export type Item = {
   wait_time: string | null;
   map_x: number | null;
   map_y: number | null;
+  custom_hours?: Record<string, unknown> | null;
 };
 
 export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType }) {
