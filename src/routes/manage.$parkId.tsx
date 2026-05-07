@@ -114,6 +114,7 @@ function ManagePage() {
           <TabsList className="flex flex-wrap">
             <TabsTrigger value="hours">Öffnungszeiten</TabsTrigger>
             <TabsTrigger value="map">Parkkarte</TabsTrigger>
+            <TabsTrigger value="placement">Platzierung</TabsTrigger>
             <TabsTrigger value="attraction">Attraktionen</TabsTrigger>
             <TabsTrigger value="food">Gastronomie</TabsTrigger>
             <TabsTrigger value="other">Sonstiges</TabsTrigger>
