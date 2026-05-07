@@ -266,11 +266,9 @@ function DayModal({
 }) {
   const initial = current?.kind === "open" ? `tpl:${current.templateId}` : current?.kind ?? "none";
   const [value, setValue] = useState(initial);
-  // Reset when date changes
-  useState(() => initial);
   return (
     <Dialog open={!!date} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent>
+      <DialogContent key={date ? dateKey(date) : "none"}>
         <DialogHeader>
           <DialogTitle>
             {date?.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}
