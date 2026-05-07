@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { OpeningHoursEditor } from "@/components/manage/opening-hours-editor";
-import { MapUploader } from "@/components/manage/map-uploader";
+import { MapAndPlacementEditor } from "@/components/manage/map-uploader";
 import { ItemsManager } from "@/components/manage/items-manager";
-import { ResortLinksManager } from "@/components/manage/resort-links-manager";
-import { MapPlacementEditor } from "@/components/manage/map-placement-editor";
 import { getDemoPark, getDemoResortName, isDemoUser } from "@/lib/demo-store";
 
 export const Route = createFileRoute("/manage/$parkId")({
@@ -23,7 +21,7 @@ type Park = {
   description: string | null;
   resort_id: string;
   map_image_url: string | null;
-  opening_hours: Record<string, { open: string; close: string; closed: boolean }>;
+  opening_hours: Record<string, unknown>;
 };
 
 function ManagePage() {
@@ -114,11 +112,8 @@ function ManagePage() {
           <TabsList className="flex flex-wrap">
             <TabsTrigger value="hours">Öffnungszeiten</TabsTrigger>
             <TabsTrigger value="map">Parkkarte</TabsTrigger>
-            <TabsTrigger value="placement">Platzierung</TabsTrigger>
             <TabsTrigger value="attraction">Attraktionen</TabsTrigger>
-            <TabsTrigger value="food">Gastronomie</TabsTrigger>
             <TabsTrigger value="other">Sonstiges</TabsTrigger>
-            <TabsTrigger value="links">Resort-Links</TabsTrigger>
           </TabsList>
 
           <TabsContent value="hours" className="mt-6">
@@ -128,18 +123,12 @@ function ManagePage() {
           </TabsContent>
 
           <TabsContent value="map" className="mt-6">
-            <SectionCard title="Parkkarte">
-              <MapUploader
+            <SectionCard title="Parkkarte & Platzierung">
+              <MapAndPlacementEditor
                 parkId={park.id}
                 currentUrl={park.map_image_url}
-                onChange={(url) => setPark({ ...park, map_image_url: url })}
+                onChange={(url: string | null) => setPark({ ...park, map_image_url: url })}
               />
-            </SectionCard>
-          </TabsContent>
-
-          <TabsContent value="placement" className="mt-6">
-            <SectionCard title="Auf der Parkkarte platzieren">
-              <MapPlacementEditor parkId={park.id} mapUrl={park.map_image_url} />
             </SectionCard>
           </TabsContent>
 
@@ -148,19 +137,9 @@ function ManagePage() {
               <ItemsManager parkId={park.id} type="attraction" />
             </SectionCard>
           </TabsContent>
-          <TabsContent value="food" className="mt-6">
-            <SectionCard title="Gastronomie">
-              <ItemsManager parkId={park.id} type="food" />
-            </SectionCard>
-          </TabsContent>
           <TabsContent value="other" className="mt-6">
             <SectionCard title="Sonstiges">
               <ItemsManager parkId={park.id} type="other" />
-            </SectionCard>
-          </TabsContent>
-          <TabsContent value="links" className="mt-6">
-            <SectionCard title="Resort-Links (Mehr-Tab in der Besucher-App)">
-              <ResortLinksManager resortId={park.resort_id} />
             </SectionCard>
           </TabsContent>
         </Tabs>
