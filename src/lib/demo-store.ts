@@ -188,6 +188,12 @@ export function saveDemoItem(payload: Omit<Item, "id" | "map_x" | "map_y">, item
   writeData(data);
 }
 
+export function updateDemoItemPosition(itemId: string, map_x: number | null, map_y: number | null) {
+  const data = readData();
+  data.items = data.items.map((item) => (item.id === itemId ? { ...item, map_x, map_y } : item));
+  writeData(data);
+}
+
 export function deleteDemoItem(itemId: string) {
   const data = readData();
   data.items = data.items.filter((item) => item.id !== itemId);
