@@ -22,16 +22,18 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Trash2, Upload, Pencil } from "lucide-react";
+import { Plus, Trash2, Upload, Pencil, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { deleteDemoItem, fileToDataUrl, isDemoUser, loadDemoItems, saveDemoItem } from "@/lib/demo-store";
 import {
   WAIT_TIME_OPTIONS,
-  STATUS_LABEL,
   TYPE_LABEL,
+  RUNTIME_STATES,
+  type RuntimeState,
   type ItemType,
   type ItemStatus,
 } from "@/lib/park-constants";
+import { getMeta, withMeta } from "@/lib/item-meta";
 
 export type Item = {
   id: string;
@@ -46,7 +48,21 @@ export type Item = {
   wait_time: string | null;
   map_x: number | null;
   map_y: number | null;
+  custom_hours?: Record<string, unknown> | null;
 };
+
+const OTHER_KINDS = [
+  "Toilette",
+  "Shop",
+  "Erste Hilfe",
+  "Eingang",
+  "Ausgang",
+  "Parkplatz",
+  "Information",
+  "Sonstiges",
+];
+
+const FOOD_KINDS = ["Restaurant", "Imbiss", "Eisdiele", "Café", "Bar", "Sonstiges"];
 
 export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType }) {
   const [items, setItems] = useState<Item[]>([]);
@@ -89,12 +105,26 @@ export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType 
     load();
   };
 
+  const updateItemQuick = async (item: Item, patch: Partial<Item>) => {
+    const next = { ...item, ...patch };
+    setItems((prev) => prev.map((i) => (i.id === item.id ? next : i)));
+    if (isDemoUser(user)) {
+      const { id, map_x, map_y, ...payload } = next;
+      saveDemoItem(payload, id);
+      return;
+    }
+    const { error } = await supabase
+      .from("park_items")
+      .update(patch as never)
+      .eq("id", item.id);
+    if (error) toast.error(error.message);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {items.length} {TYPE_LABEL[type]}
-          {items.length === 1 ? "" : type === "attraction" ? "en" : type === "food" ? "" : ""}
         </p>
         <ItemDialog parkId={parkId} type={type} onSaved={load} />
       </div>
@@ -108,40 +138,113 @@ export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType 
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {items.map((it) => (
-            <div key={it.id} className="rounded-2xl border bg-background p-4 shadow-soft">
-              <div className="flex items-start gap-3">
-                {it.photo_url ? (
-                  <img
-                    src={it.photo_url}
-                    alt={it.name}
-                    className="h-16 w-16 shrink-0 rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="h-16 w-16 shrink-0 rounded-xl bg-muted" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <h4 className="truncate font-semibold">{it.name}</h4>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {STATUS_LABEL[it.status]}
-                    {it.type === "attraction" && it.show_wait_time && it.wait_time
-                      ? ` · ${it.wait_time} Min`
-                      : ""}
-                  </p>
-                  {it.description && (
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                      {it.description}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <ItemDialog parkId={parkId} type={type} item={it} onSaved={load} trigger="icon" />
-                  <Button size="icon" variant="ghost" onClick={() => remove(it.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <ItemCard
+              key={it.id}
+              item={it}
+              onChange={(patch) => updateItemQuick(it, patch)}
+              onRemove={() => remove(it.id)}
+              onSaved={load}
+            />
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ItemCard({
+  item,
+  onChange,
+  onRemove,
+  onSaved,
+}: {
+  item: Item;
+  onChange: (patch: Partial<Item>) => void;
+  onRemove: () => void;
+  onSaved: () => void;
+}) {
+  const meta = getMeta(item);
+  const runtime: RuntimeState = (meta.runtime as RuntimeState) ?? "open";
+
+  // Combined dropdown: wait time options if enabled, else runtime states
+  const setRuntime = (v: RuntimeState) => {
+    onChange({ custom_hours: withMeta(item.custom_hours, { runtime: v }) });
+  };
+  const setWait = (v: string) => onChange({ wait_time: v });
+
+  return (
+    <div className="rounded-2xl border bg-background p-4 shadow-soft">
+      <div className="flex items-start gap-3">
+        {item.photo_url ? (
+          <img
+            src={item.photo_url}
+            alt={item.name}
+            className="h-16 w-16 shrink-0 rounded-xl object-cover"
+          />
+        ) : (
+          <div className="h-16 w-16 shrink-0 rounded-xl bg-muted" />
+        )}
+        <div className="min-w-0 flex-1">
+          <h4 className="truncate font-semibold">{item.name}</h4>
+          {meta.label && (
+            <p className="truncate text-xs text-muted-foreground">{meta.label}</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-1">
+          <ItemDialog
+            parkId={item.park_id}
+            type={item.type}
+            item={item}
+            onSaved={onSaved}
+            trigger="icon"
+          />
+          <Button size="icon" variant="ghost" onClick={onRemove}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {item.type === "attraction" ? (
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <Select value={runtime} onValueChange={(v) => setRuntime(v as RuntimeState)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {RUNTIME_STATES.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {item.show_wait_time && runtime === "open" && (
+            <Select value={item.wait_time ?? "5"} onValueChange={setWait}>
+              <SelectTrigger>
+                <Clock className="mr-1 h-3.5 w-3.5" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {WAIT_TIME_OPTIONS.map((w) => (
+                  <SelectItem key={w} value={w}>
+                    {w} Min
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      ) : (
+        <div className="mt-3">
+          <Select value={runtime} onValueChange={(v) => setRuntime(v as RuntimeState)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open">Geöffnet</SelectItem>
+              <SelectItem value="closed">Geschlossen</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
     </div>
@@ -162,12 +265,13 @@ function ItemDialog({
   trigger?: "button" | "icon";
 }) {
   const { user } = useAuth();
+  const initialMeta = getMeta(item);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(item?.name ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
   const [important, setImportant] = useState(item?.important_info ?? "");
+  const [label, setLabel] = useState<string>(initialMeta.label ?? (type === "other" ? OTHER_KINDS[0] : type === "food" ? FOOD_KINDS[0] : ""));
   const [photoUrl, setPhotoUrl] = useState<string | null>(item?.photo_url ?? null);
-  const [status, setStatus] = useState<ItemStatus>(item?.status ?? "sync");
   const [showWait, setShowWait] = useState(item?.show_wait_time ?? false);
   const [waitTime, setWaitTime] = useState(item?.wait_time ?? "5");
   const [busy, setBusy] = useState(false);
@@ -177,8 +281,8 @@ function ItemDialog({
     setName(item?.name ?? "");
     setDescription(item?.description ?? "");
     setImportant(item?.important_info ?? "");
+    setLabel(getMeta(item).label ?? (type === "other" ? OTHER_KINDS[0] : type === "food" ? FOOD_KINDS[0] : ""));
     setPhotoUrl(item?.photo_url ?? null);
-    setStatus(item?.status ?? "sync");
     setShowWait(item?.show_wait_time ?? false);
     setWaitTime(item?.wait_time ?? "5");
   };
@@ -208,6 +312,10 @@ function ItemDialog({
   const save = async () => {
     if (!name.trim()) return;
     setBusy(true);
+    const customHours = withMeta(item?.custom_hours, {
+      label: label || null,
+      runtime: getMeta(item).runtime ?? "open",
+    });
     const payload = {
       park_id: parkId,
       type,
@@ -215,9 +323,10 @@ function ItemDialog({
       description: description.trim() || null,
       important_info: important.trim() || null,
       photo_url: photoUrl,
-      status,
+      status: "sync" as ItemStatus,
       show_wait_time: type === "attraction" ? showWait : false,
       wait_time: type === "attraction" && showWait ? waitTime : null,
+      custom_hours: customHours,
     };
     if (isDemoUser(user)) {
       saveDemoItem(payload, item?.id);
@@ -238,6 +347,8 @@ function ItemDialog({
     reset();
     onSaved();
   };
+
+  const kindOptions = type === "food" ? FOOD_KINDS : type === "other" ? OTHER_KINDS : null;
 
   return (
     <Dialog
@@ -265,7 +376,7 @@ function ItemDialog({
             {item ? "Bearbeiten" : `Neue ${TYPE_LABEL[type]}`}
           </DialogTitle>
           <DialogDescription>
-            Pflege Name, Beschreibung, Foto und Status.
+            Pflege Name, Beschreibung, Foto und Label.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -273,6 +384,31 @@ function ItemDialog({
             <Label>Name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
+
+          {kindOptions ? (
+            <div className="space-y-2">
+              <Label>Art</Label>
+              <Select value={label} onValueChange={setLabel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {kindOptions.map((k) => (
+                    <SelectItem key={k} value={k}>{k}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>Label (optional)</Label>
+              <Input
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="z.B. Familienfahrgeschäft"
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Foto</Label>
@@ -312,20 +448,6 @@ function ItemDialog({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as ItemStatus)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sync">Mit Park-Öffnungszeiten synchron</SelectItem>
-                <SelectItem value="open">Manuell geöffnet</SelectItem>
-                <SelectItem value="closed">Manuell geschlossen</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {type === "attraction" && (
             <div className="space-y-3 rounded-2xl border bg-muted/30 p-4">
               <div className="flex items-center justify-between">
@@ -342,7 +464,7 @@ function ItemDialog({
                     <SelectContent>
                       {WAIT_TIME_OPTIONS.map((w) => (
                         <SelectItem key={w} value={w}>
-                          {w} {w === "90+" ? "Min" : "Min"}
+                          {w} Min
                         </SelectItem>
                       ))}
                     </SelectContent>
