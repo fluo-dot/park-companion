@@ -9,6 +9,7 @@ import { OpeningHoursEditor } from "@/components/manage/opening-hours-editor";
 import { MapUploader } from "@/components/manage/map-uploader";
 import { ItemsManager } from "@/components/manage/items-manager";
 import { ResortLinksManager } from "@/components/manage/resort-links-manager";
+import { MapPlacementEditor } from "@/components/manage/map-placement-editor";
 import { getDemoPark, getDemoResortName, isDemoUser } from "@/lib/demo-store";
 
 export const Route = createFileRoute("/manage/$parkId")({
@@ -113,6 +114,7 @@ function ManagePage() {
           <TabsList className="flex flex-wrap">
             <TabsTrigger value="hours">Öffnungszeiten</TabsTrigger>
             <TabsTrigger value="map">Parkkarte</TabsTrigger>
+            <TabsTrigger value="placement">Platzierung</TabsTrigger>
             <TabsTrigger value="attraction">Attraktionen</TabsTrigger>
             <TabsTrigger value="food">Gastronomie</TabsTrigger>
             <TabsTrigger value="other">Sonstiges</TabsTrigger>
@@ -132,6 +134,12 @@ function ManagePage() {
                 currentUrl={park.map_image_url}
                 onChange={(url) => setPark({ ...park, map_image_url: url })}
               />
+            </SectionCard>
+          </TabsContent>
+
+          <TabsContent value="placement" className="mt-6">
+            <SectionCard title="Auf der Parkkarte platzieren">
+              <MapPlacementEditor parkId={park.id} mapUrl={park.map_image_url} />
             </SectionCard>
           </TabsContent>
 
