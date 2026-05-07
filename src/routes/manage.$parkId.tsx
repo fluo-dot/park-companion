@@ -9,6 +9,7 @@ import { OpeningHoursEditor } from "@/components/manage/opening-hours-editor";
 import { MapUploader } from "@/components/manage/map-uploader";
 import { ItemsManager } from "@/components/manage/items-manager";
 import { ResortLinksManager } from "@/components/manage/resort-links-manager";
+import { MapPlacementEditor } from "@/components/manage/map-placement-editor";
 import { getDemoPark, getDemoResortName, isDemoUser } from "@/lib/demo-store";
 
 export const Route = createFileRoute("/manage/$parkId")({
