@@ -115,7 +115,7 @@ export function ItemsManager({ parkId, type }: { parkId: string; type: ItemType 
     }
     const { error } = await supabase
       .from("park_items")
-      .update(patch)
+      .update(patch as never)
       .eq("id", item.id);
     if (error) toast.error(error.message);
   };
