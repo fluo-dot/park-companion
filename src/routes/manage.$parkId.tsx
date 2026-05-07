@@ -137,6 +137,12 @@ function ManagePage() {
             </SectionCard>
           </TabsContent>
 
+          <TabsContent value="placement" className="mt-6">
+            <SectionCard title="Auf der Parkkarte platzieren">
+              <MapPlacementEditor parkId={park.id} mapUrl={park.map_image_url} />
+            </SectionCard>
+          </TabsContent>
+
           <TabsContent value="attraction" className="mt-6">
             <SectionCard title="Attraktionen">
               <ItemsManager parkId={park.id} type="attraction" />
